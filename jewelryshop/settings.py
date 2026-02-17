@@ -69,6 +69,22 @@ DATABASES = {
     }
 }
 
+# Vercel SQLite Workaround
+# Vercel filesystem is read-only, so we copy the DB to /tmp (writable)
+if os.environ.get('VERCEL') or 'VERCEL' in os.environ:
+    import shutil
+    DB_FILE = os.path.join(BASE_DIR, 'db.sqlite3')
+    TMP_DB_FILE = '/tmp/db.sqlite3'
+    
+    # Check if we can write to /tmp
+    if os.access('/tmp', os.W_OK):
+        # Always copy the fresh DB from source to /tmp to ensure schema validity
+        # Note: This means data is reset on every function instance startup
+        if os.path.exists(DB_FILE):
+            shutil.copyfile(DB_FILE, TMP_DB_FILE)
+            DATABASES['default']['NAME'] = TMP_DB_FILE
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
